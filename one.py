@@ -9,10 +9,10 @@
           "datasetId": 4006713
         }
       ],
-      "isInternetEnabled": true,
+      "isInternetEnabled": True,
       "language": "python",
       "sourceType": "notebook",
-      "isGpuEnabled": true
+      "isGpuEnabled": True
     },
     "kernelspec": {
       "display_name": "Python 3",
