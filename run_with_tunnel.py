@@ -37,6 +37,7 @@ def wait_port(port):
 # =============================
 def start_cloudflare():
     print("🌐 Starting Cloudflare Tunnel...")
+
     p = subprocess.Popen(
         ["cloudflared", "tunnel", "--url", f"http://127.0.0.1:{PORT}"],
         stdout=subprocess.PIPE,
@@ -53,14 +54,23 @@ def start_cloudflare():
 
 
 # =============================
-# PINGGY
+# PINGGY (FIXED)
 # =============================
 def start_pinggy():
     print("🌐 Starting Pinggy Tunnel...")
-    subprocess.Popen(
+
+    p = subprocess.Popen(
         f"ssh -o StrictHostKeyChecking=no -p 443 -R0:localhost:{PORT} a.pinggy.io",
-        shell=True
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True
     )
+
+    for line in p.stdout:
+        if ".pinggy.link" in line:
+            print("✅ Pinggy URL:", line.strip())
+            break
 
 
 # =============================
@@ -68,6 +78,7 @@ def start_pinggy():
 # =============================
 def start_localtunnel():
     print("🌐 Starting LocalTunnel...")
+
     p = subprocess.Popen(
         ["lt", "--port", str(PORT)],
         stdout=subprocess.PIPE,
@@ -101,9 +112,9 @@ wait_port(PORT)
 
 print("\n🚀 Starting tunnels...\n")
 
-threading.Thread(target=start_cloudflare).start()
-threading.Thread(target=start_pinggy).start()
-threading.Thread(target=start_localtunnel).start()
+threading.Thread(target=start_cloudflare, daemon=True).start()
+threading.Thread(target=start_pinggy, daemon=True).start()
+threading.Thread(target=start_localtunnel, daemon=True).start()
 
 while True:
     time.sleep(60)
