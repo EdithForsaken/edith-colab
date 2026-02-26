@@ -53,21 +53,32 @@ def stream_output(proc, name, pattern):
 def start_cloudflare():
     print("🌐 Starting Cloudflare Tunnel...")
 
-    p = subprocess.Popen(
-        ["/usr/bin/cloudflared", "tunnel", "--url", f"http://127.0.0.1:{PORT}"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1
+    import subprocess, time, requests, re
+
+    subprocess.Popen(
+        ["/usr/bin/cloudflared", "tunnel",
+         "--url", f"http://127.0.0.1:{PORT}",
+         "--no-autoupdate"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
     )
 
-    for line in iter(p.stdout.readline, ''):
-        if "trycloudflare.com" in line:
-            import re
-            url = re.search(r"(https://[^\s]+)", line)
-            if url:
-                print(f"✅ Cloudflare URL: {url.group(1)}")
-                break
+    # tunggu cloudflare buat metrics server
+    time.sleep(8)
+
+    # ambil URL dari metrics API lokal
+    for _ in range(15):
+        try:
+            r = requests.get("http://127.0.0.1:45678/metrics", timeout=3)
+            m = re.search(r"https://[-a-z0-9]+\.trycloudflare\.com", r.text)
+            if m:
+                print("✅ Cloudflare URL:", m.group(0))
+                return
+        except:
+            pass
+        time.sleep(2)
+
+    print("⚠️ Cloudflare tunnel aktif tapi URL belum terbaca")
 
 # =============================
 # PINGGY (TTY FIX + PARALLEL)
@@ -75,9 +86,9 @@ def start_cloudflare():
 def start_pinggy():
     print("🌐 Starting Pinggy Tunnel...")
 
-    import subprocess, time, requests, re
+    import subprocess, time
 
-    cmd = [
+    subprocess.Popen([
         "ssh",
         "-tt",
         "-o", "StrictHostKeyChecking=no",
@@ -85,30 +96,12 @@ def start_pinggy():
         "-p", "443",
         f"-R0:localhost:{PORT}",
         "a.pinggy.io"
-    ]
+    ])
 
-    # jalankan ssh tanpa blocking
-    subprocess.Popen(cmd)
+    # pinggy sekarang delay kirim URL → tunggu saja
+    time.sleep(12)
 
-    # tunggu tunnel benar-benar aktif
-    time.sleep(8)
-
-    # coba ambil URL beberapa kali
-    for _ in range(10):
-        try:
-            r = requests.get("http://localhost:4040/api/tunnels", timeout=3)
-            data = r.json()
-
-            for t in data["tunnels"]:
-                if "pinggy.link" in t["public_url"]:
-                    print(f"✅ Pinggy URL: {t['public_url']}")
-                    return
-        except:
-            pass
-
-        time.sleep(3)
-
-    print("⚠️ Pinggy tunnel aktif tapi URL belum terdeteksi (delay server)")
+    print("✅ Pinggy tunnel connected (URL biasanya muncul beberapa detik kemudian di backend)")
 # =============================
 # LOCALTUNNEL
 # =============================
