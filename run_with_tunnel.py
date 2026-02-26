@@ -82,13 +82,31 @@ def start_pinggy():
 
     p = subprocess.Popen(
         cmd,
+        stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
         bufsize=1
     )
 
-    stream_output(p, "Pinggy", "pinggy.link")
+    # ⭐ kirim ENTER otomatis (ini yang selama ini kurang)
+    time.sleep(2)
+    try:
+        p.stdin.write("\n")
+        p.stdin.flush()
+    except:
+        pass
+
+    for line in iter(p.stdout.readline, ''):
+        line = line.strip()
+        print(line)
+
+        if "pinggy.link" in line:
+            import re
+            url = re.search(r"(https://[^\s]+)", line)
+            if url:
+                print(f"✅ Pinggy URL: {url.group(1)}")
+                break
 
 
 # =============================
