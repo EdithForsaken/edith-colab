@@ -75,6 +75,8 @@ def start_cloudflare():
 def start_pinggy():
     print("🌐 Starting Pinggy Tunnel...")
 
+    import subprocess, time, requests, re
+
     cmd = [
         "ssh",
         "-tt",
@@ -85,33 +87,28 @@ def start_pinggy():
         "a.pinggy.io"
     ]
 
-    p = subprocess.Popen(
-        cmd,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1
-    )
+    # jalankan ssh tanpa blocking
+    subprocess.Popen(cmd)
 
-    # auto ENTER (pinggy banner fix)
-    import time
-    time.sleep(2)
-    try:
-        p.stdin.write("\n")
-        p.stdin.flush()
-    except:
-        pass
+    # tunggu tunnel benar-benar aktif
+    time.sleep(8)
 
-    for line in iter(p.stdout.readline, ''):
-        print("[PINGGY]", line.strip())
+    # coba ambil URL beberapa kali
+    for _ in range(10):
+        try:
+            r = requests.get("http://localhost:4040/api/tunnels", timeout=3)
+            data = r.json()
 
-        if "pinggy.link" in line:
-            import re
-            url = re.search(r"(https://[^\s]+)", line)
-            if url:
-                print(f"✅ Pinggy URL: {url.group(1)}")
-                break
+            for t in data["tunnels"]:
+                if "pinggy.link" in t["public_url"]:
+                    print(f"✅ Pinggy URL: {t['public_url']}")
+                    return
+        except:
+            pass
+
+        time.sleep(3)
+
+    print("⚠️ Pinggy tunnel aktif tapi URL belum terdeteksi (delay server)")
 # =============================
 # LOCALTUNNEL
 # =============================
