@@ -54,15 +54,20 @@ def start_cloudflare():
     print("🌐 Starting Cloudflare Tunnel...")
 
     p = subprocess.Popen(
-        ["cloudflared", "tunnel", "--url", f"http://127.0.0.1:{PORT}"],
+        ["/usr/bin/cloudflared", "tunnel", "--url", f"http://127.0.0.1:{PORT}"],
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
         bufsize=1
     )
 
-    stream_output(p, "Cloudflare", "trycloudflare.com")
-
+    for line in iter(p.stdout.readline, ''):
+        if "trycloudflare.com" in line:
+            import re
+            url = re.search(r"(https://[^\s]+)", line)
+            if url:
+                print(f"✅ Cloudflare URL: {url.group(1)}")
+                break
 
 # =============================
 # PINGGY (TTY FIX + PARALLEL)
@@ -90,6 +95,7 @@ def start_pinggy():
     )
 
     # auto ENTER (pinggy banner fix)
+    import time
     time.sleep(2)
     try:
         p.stdin.write("\n")
@@ -97,26 +103,15 @@ def start_pinggy():
     except:
         pass
 
-    url_found = False
-
     for line in iter(p.stdout.readline, ''):
-        line = line.strip()
-
-        # tampilkan log pinggy supaya kelihatan hidup
-        print("[PINGGY]", line)
+        print("[PINGGY]", line.strip())
 
         if "pinggy.link" in line:
             import re
             url = re.search(r"(https://[^\s]+)", line)
             if url:
                 print(f"✅ Pinggy URL: {url.group(1)}")
-                url_found = True
                 break
-
-    # fallback — pinggy kadang delay kirim URL
-    if not url_found:
-        print("⚠️ Pinggy tunnel aktif, menunggu URL (delay dari server)...")
-
 # =============================
 # LOCALTUNNEL
 # =============================
