@@ -89,7 +89,7 @@ def start_pinggy():
         bufsize=1
     )
 
-    # ⭐ kirim ENTER otomatis (ini yang selama ini kurang)
+    # auto ENTER (pinggy banner fix)
     time.sleep(2)
     try:
         p.stdin.write("\n")
@@ -97,17 +97,25 @@ def start_pinggy():
     except:
         pass
 
+    url_found = False
+
     for line in iter(p.stdout.readline, ''):
         line = line.strip()
-        print(line)
+
+        # tampilkan log pinggy supaya kelihatan hidup
+        print("[PINGGY]", line)
 
         if "pinggy.link" in line:
             import re
             url = re.search(r"(https://[^\s]+)", line)
             if url:
                 print(f"✅ Pinggy URL: {url.group(1)}")
+                url_found = True
                 break
 
+    # fallback — pinggy kadang delay kirim URL
+    if not url_found:
+        print("⚠️ Pinggy tunnel aktif, menunggu URL (delay dari server)...")
 
 # =============================
 # LOCALTUNNEL
