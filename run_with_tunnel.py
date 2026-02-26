@@ -59,20 +59,27 @@ def start_cloudflare():
 def start_pinggy():
     print("🌐 Starting Pinggy Tunnel...")
 
+    cmd = [
+        "ssh",
+        "-o", "StrictHostKeyChecking=no",
+        "-o", "ServerAliveInterval=30",
+        "-p", "443",
+        f"-R0:localhost:{PORT}",
+        "a.pinggy.io"
+    ]
+
     p = subprocess.Popen(
-        f"ssh -o StrictHostKeyChecking=no -p 443 -R0:localhost:{PORT} a.pinggy.io",
-        shell=True,
+        cmd,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        text=True
+        text=True,
+        bufsize=1
     )
 
-    for line in p.stdout:
-        if ".pinggy.link" in line:
+    for line in iter(p.stdout.readline, ''):
+        if "pinggy.link" in line or "https://" in line:
             print("✅ Pinggy URL:", line.strip())
             break
-
-
 # =============================
 # LOCALTUNNEL
 # =============================
